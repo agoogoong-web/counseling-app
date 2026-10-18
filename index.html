@@ -321,14 +321,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="inputStudentId" class="block text-sm font-bold text-stone-700 mb-1.5">
-                  학번 (4자리) <span class="text-rose-500">*</span>
+                  학번 (5자리) <span class="text-rose-500">*</span>
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-stone-400">
                     <i class="fa-solid fa-id-badge"></i>
                   </span>
                   <input id="inputStudentId" type="text" maxlength="5" required
-                    placeholder="예: 2415 (2학년 4반 15번)"
+                    placeholder="예: 20415 (2학년 4반 15번)"
                     class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 focus:border-sage-600 focus:ring-2 focus:ring-sage-500/20 outline-none font-mono text-sm transition" />
                 </div>
               </div>
@@ -356,12 +356,12 @@
                 <button type="button" onclick="selectTopic('학습법·성적 고민')" data-topic="학습법·성적 고민"
                   class="topic-chip p-3 rounded-xl border-2 border-sage-600 bg-sage-50 text-sage-700 font-bold text-xs sm:text-sm flex items-center gap-2 transition text-left">
                   <i class="fa-solid fa-square-root-variable text-base"></i>
-                  <span> 학습법·성적 고민</span>
+                  <span>학습법·성적 고민</span>
                 </button>
                 <button type="button" onclick="selectTopic('내신·수능 최저과목 선택')" data-topic="내신·수능 최저과목 선택"
                   class="topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 transition text-left">
                   <i class="fa-solid fa-compass-drafting text-base text-stone-400"></i>
-                  <span>선택과목 </span>
+                  <span>선택과목</span>
                 </button>
                 <button type="button" onclick="selectTopic('세특·심화 탐구 주제')" data-topic="세특·심화 탐구 주제"
                   class="topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 transition text-left">
@@ -671,7 +671,7 @@
         <strong>고등학교 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
       </div>
       <div>
-        UI Prototype v3.1 · 브라우저 저장소(LocalStorage) 연동 및 보안 인증 완료
+        UI Prototype v3.2 · 예약 삭제 기능 및 로컬저장 연동 완료
       </div>
     </div>
   </footer>
@@ -706,7 +706,7 @@
         studentId: '20418',
         name: '김민재',
         pin: '0000',
-        topic: '내신·수능 선택과목(미적/기하/확통)',
+        topic: '내신·수능 최저과목 선택',
         slotId: 'slot-4',
         date: '2026-10-19',
         time: '17:30 ~ 17:50',
@@ -793,7 +793,7 @@
       }, 3200);
     }
 
-    // 교사 인증 (자동 입력 없이 빈 입력창으로 보안 강화)
+    // 교사 인증
     function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
@@ -803,7 +803,7 @@
       const inputEmail = prompt("교사 인증을 위해 구글 이메일을 입력해 주세요:");
       if (inputEmail === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
-        showToast('정학진 선생님 구글 계정으로 인증되었습니다!', 'success');
+        showToast('학진 선생님 구글 계정으로 인증되었습니다!', 'success');
         switchRoleMode('teacher');
       } else if (inputEmail !== null) {
         showToast('등록된 교사 권한이 없는 이메일입니다.', 'warning');
@@ -1017,7 +1017,7 @@
       };
 
       availableTimeSlots.push(newSlot);
-      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+      saveStoredData('math_counseling_slots', availableTimeSlots);
 
       document.getElementById('newSlotTime').value = '';
       document.getElementById('newSlotLabel').value = '';
@@ -1035,11 +1035,28 @@
         return;
       }
       availableTimeSlots = availableTimeSlots.filter(s => s.id !== slotId);
-      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+      saveStoredData('math_counseling_slots', availableTimeSlots);
 
       renderTimeSlots();
       renderTeacherTimeSlots();
       showToast('선택한 상담 시간대가 삭제되었습니다.', 'info');
+    }
+
+    // [신규 추가] 선생님이 상담 신청 건을 직접 삭제하는 함수
+    function deleteCounselingRecord(id) {
+      const target = counselingList.find(c => c.id === id);
+      if (!target) return;
+
+      if (confirm(`정말로 ${target.name} (${target.studentId}) 학생의 상담 신청 내역을 삭제하시겠습니까?`)) {
+        counselingList = counselingList.filter(c => c.id !== id);
+        saveStoredData('math_counseling_list', counselingList);
+
+        renderHospitalBoard();
+        renderTimeSlots();
+        renderTeacherTimeSlots();
+        renderTeacherList();
+        showToast(`${target.name} 학생의 상담 신청이 삭제되었습니다.`, 'info');
+      }
     }
 
     function renderTeacherTimeSlots() {
@@ -1164,7 +1181,7 @@
       };
 
       counselingList.push(newEntry);
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      saveStoredData('math_counseling_list', counselingList);
 
       document.getElementById('inputStudentId').value = '';
       document.getElementById('inputStudentName').value = '';
@@ -1382,9 +1399,16 @@
                 <button onclick="updateStudentStatus('${item.id}', 'completed')" title="완료" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-stone-200 hover:bg-stone-300 text-stone-700 transition">완료</button>
 
                 <button onclick="openFeedbackModal('${item.id}')"
-                  class="px-3.5 py-1.5 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm ml-auto sm:ml-1">
+                  class="px-3.5 py-1.5 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
                   <i class="fa-solid fa-pen-to-square"></i>
                   <span>상담 결과 입력</span>
+                </button>
+
+                <!-- [신규 추가] 예약 삭제 버튼 -->
+                <button onclick="deleteCounselingRecord('${item.id}')"
+                  class="px-3.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-regular fa-trash-can"></i>
+                  <span>예약 삭제</span>
                 </button>
               </div>
             </div>
@@ -1556,7 +1580,7 @@
       target.additionalNotes = document.getElementById('modalAdditionalNotes').value.trim();
       target.summaryText = document.getElementById('modalSummaryText').value.trim();
 
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      saveStoredData('math_counseling_list', counselingList);
 
       closeFeedbackModal();
       renderTeacherList();
@@ -1573,7 +1597,7 @@
       student.time = targetSlot.time;
       student.label = targetSlot.label;
 
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      saveStoredData('math_counseling_list', counselingList);
 
       renderHospitalBoard();
       renderTimeSlots();
@@ -1591,7 +1615,7 @@
       const target = counselingList.find(item => item.id === id);
       if (target) {
         target.status = newStatus;
-        saveStoredData('math_counseling_list', counselingList); // 로컬저장
+        saveStoredData('math_counseling_list', counselingList);
 
         renderHospitalBoard();
         renderTimeSlots();
