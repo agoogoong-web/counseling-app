@@ -15,7 +15,7 @@
   <!-- Google Identity Services (Google Sign-In) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
-  <!-- Firebase SDK CDN -->
+  <!-- Firebase SDK CDN (v10 버전) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -544,7 +544,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
           <div>
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-1.5">
-              <i class="fa-solid fa-sliders"></i> 교사용 실시간 상담 컨트롤러 (<span id="teacherEmailBadge" class="font-mono">agoogoong@gmail.com</span> 인증됨)
+              <i class="fa-solid fa-sliders"></i> 교사용 실시간 상담 컨트롤러 (인증됨)
             </div>
             <h3 class="text-xl sm:text-2xl font-bold text-stone-800">
               상담 가능 시간대 설정 및 전문 입시 상담 입력
@@ -675,24 +675,26 @@
         <strong>고등학교 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
       </div>
       <div>
-        UI Prototype v3.3 · 파이어베이스(Firebase) 실시간 멀티기기 연동 완료
+        UI Prototype v3.4 · Firebase 실시간 멀티기기 연동 완료
       </div>
     </div>
   </footer>
 
   <script>
-    // 💡 TODO: 본인의 파이어베이스 프로젝트 설정값으로 아래를 채워주세요!
+    // 1. 제공해주신 Firebase 프로젝트 설정 적용
     const firebaseConfig = {
-     apiKey: "AIzaSyDEWy6N0x4uDbUfmv8StZL-i31ZFaXf2WY",
-  authDomain: "counseling-6ebbc.firebaseapp.com",
-  projectId: "counseling-6ebbc",
-  storageBucket: "counseling-6ebbc.firebasestorage.app",
-  messagingSenderId: "1018361572837",
-  appId: "1:1018361572837:web:4ad4bb8ce6d2fc02c7530c"
+      apiKey: "AIzaSyDEWy6N0x4uDbUfmv8StZL-i31ZFaXf2WY",
+      authDomain: "counseling-6ebbc.firebaseapp.com",
+      projectId: "counseling-6ebbc",
+      storageBucket: "counseling-6ebbc.firebasestorage.app",
+      messagingSenderId: "1018361572837",
+      appId: "1:1018361572837:web:4ad4bb8ce6d2fc02c7530c"
     };
 
-    // Firebase 초기화
-    firebase.initializeApp(firebaseConfig);
+    // Firebase 초기화 (오류 방지 안전장치 추가)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.firestore();
 
     // 기본 시간대 및 상담 데이터 정의
@@ -737,9 +739,9 @@
     let currentEditingStudentId = null;
     let isTeacherAuthenticated = false;
 
-    const ALLOWED_TEACHER_EMAIL = 'agoogoong@gmail.com';
+    const ALLOWED_TEACHER_EMAIL = '0092';
 
-    // 파이어베이스에 데이터 즉시 동기화하는 함수
+    // Firebase 데이터 동기화 함수
     function syncDataToFirebase(collectionName, docId, dataArray) {
       db.collection(collectionName).doc(docId).set({ items: dataArray })
         .catch((error) => {
@@ -812,20 +814,20 @@
       }, 3200);
     }
 
-    // 교사 인증
+    // 교사 인증 (인증번호 0092)
     function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
         return;
       }
 
-      const inputEmail = prompt("교사 인증을 위해 구글 이메일을 입력해 주세요:");
+      const inputEmail = prompt("교사 인증을 위해 인증번호를 입력해 주세요:");
       if (inputEmail === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
-        showToast('학진 선생님 구글 계정으로 인증되었습니다!', 'success');
+        showToast('학진 선생님으로 인증되었습니다!', 'success');
         switchRoleMode('teacher');
       } else if (inputEmail !== null) {
-        showToast('등록된 교사 권한이 없는 이메일입니다.', 'warning');
+        showToast('인증번호가 잘못 되었습니다.', 'warning');
       }
     }
 
@@ -1697,11 +1699,12 @@
       if (clockEl) clockEl.textContent = `현재 시각 ${hours}:${mins}:${secs}`;
     }
 
-    // 페이지 로드 시 파이어베이스 실시간 데이터 연동
+    // 앱 실행 시 Firestore 실시간 구독(onSnapshot)으로 여러 기기 연동 활성화
     window.onload = function () {
       // 1. 상담 시간대 실시간 동기화
       db.collection("counseling_db").doc("time_slots").onSnapshot((doc) => {
-        if (doc.exists) {`
+        if (doc.exists) {
+          availableTimeSlots = doc.data().items;
         } else {
           availableTimeSlots = defaultTimeSlots;
           syncDataToFirebase("counseling_db", "time_slots", defaultTimeSlots);
