@@ -726,7 +726,7 @@
     let currentEditingStudentId = null;
     let isTeacherAuthenticated = false;
 
-    const ALLOWED_TEACHER_EMAIL = 'agoogoong@gmail.com';
+    const ALLOWED_TEACHER_EMAIL = '0092';
 
     function formatKoreanShortDate(dateStr) {
       if (!dateStr) return '';
@@ -800,13 +800,13 @@
         return;
       }
 
-      const inputEmail = prompt("교사 인증을 위해 구글 이메일을 입력해 주세요:");
+      const inputEmail = prompt("교사 인증을 위해 인증번호를 입력해 주세요:");
       if (inputEmail === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
-        showToast('학진 선생님 구글 계정으로 인증되었습니다!', 'success');
+        showToast('학진 선생님으로 인증되었습니다!', 'success');
         switchRoleMode('teacher');
       } else if (inputEmail !== null) {
-        showToast('등록된 교사 권한이 없는 이메일입니다.', 'warning');
+        showToast('인증번호가 잘못 되었습니다.', 'warning');
       }
     }
 
