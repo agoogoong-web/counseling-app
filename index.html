@@ -14,6 +14,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Google Identity Services (Google Sign-In) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
+  <!-- Firebase SDK CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <script>
     tailwind.config = {
@@ -123,7 +127,7 @@
             <span id="liveClock" class="text-xs font-mono text-stone-500 hidden sm:inline-block"></span>
           </div>
           <h1 class="text-lg sm:text-xl font-bold text-stone-800 tracking-tight mt-0.5">
-            수학 선생님과 함께하는 <span class="text-sage-600">진로·학업 상담실</span>
+            학진 선생님과 함께하는 <span class="text-sage-600">진로·학업 상담실</span>
           </h1>
         </div>
       </div>
@@ -159,7 +163,7 @@
             실시간 상담 진행 전광판
           </h2>
           <span class="text-xs text-stone-500 bg-stone-200/70 px-2.5 py-0.5 rounded-full">
-            장소: 본관 3층 수학과 연구실 옆 상담코너
+            장소: 3층 2학년실
           </span>
         </div>
         <p class="text-xs text-stone-500">
@@ -188,7 +192,7 @@
           </div>
 
           <div class="pt-3 border-t border-white/15 flex items-center justify-between gap-2 text-xs text-emerald-100">
-            <span><i class="fa-solid fa-circle-exclamation mr-1.5 text-amber-300"></i>학년실 상담 코너에서 대기 후 입실하세요.</span>
+            <span><i class="fa-solid fa-circle-exclamation mr-1.5 text-amber-300"></i>학년실에는 인사 잘 하고 입실하세요.</span>
             <span id="inSessionCountBadge" class="font-mono font-bold shrink-0">1명 진행중</span>
           </div>
         </div>
@@ -272,13 +276,13 @@
           <div class="lg:col-span-4 bg-cream-100 p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-stone-200/80 flex flex-col justify-between">
             <div class="space-y-4">
               <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sage-100 text-sage-700 text-xs font-bold">
-                <i class="fa-solid fa-mug-hot"></i> 따뜻한 수학 상담실 안내
+                <i class="fa-solid fa-mug-hot"></i> 따뜻한 상담실 안내
               </div>
               <h3 class="text-xl sm:text-2xl font-bold text-stone-800 leading-snug">
                 성적 고민부터 진로까지,<br/>편한 마음으로 신청하세요.
               </h3>
               <p class="text-sm text-stone-600 leading-relaxed">
-                수학 공부법이 막막하거나, 내신·수능 준비, 이과 계열 진학, 수학 세특 탐구 주제 등 어떤 이야기든 환영합니다.
+                공부법이 막막하거나, 내신·수능 준비, 이과 계열 진학, 세특 탐구 주제 등 어떤 이야기든 환영합니다.
               </p>
 
               <div class="space-y-2.5 pt-2">
@@ -353,20 +357,20 @@
                 상담 주제 선택 <span class="text-rose-500">*</span>
               </label>
               <div id="topicChipContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <button type="button" onclick="selectTopic('수학 학습법·성적 고민')" data-topic="수학 학습법·성적 고민"
+                <button type="button" onclick="selectTopic('학습법·성적 고민')" data-topic="학습법·성적 고민"
                   class="topic-chip p-3 rounded-xl border-2 border-sage-600 bg-sage-50 text-sage-700 font-bold text-xs sm:text-sm flex items-center gap-2 transition text-left">
                   <i class="fa-solid fa-square-root-variable text-base"></i>
-                  <span>수학 학습법·성적 고민</span>
+                  <span>학습법·성적 고민</span>
                 </button>
-                <button type="button" onclick="selectTopic('내신·수능 선택과목(미적/기하/확통)')" data-topic="내신·수능 선택과목(미적/기하/확통)"
+                <button type="button" onclick="selectTopic('내신·수능 최저과목 선택')" data-topic="내신·수능 최저과목 선택"
                   class="topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 transition text-left">
                   <i class="fa-solid fa-compass-drafting text-base text-stone-400"></i>
-                  <span>선택과목 (미적/기하/확통)</span>
+                  <span>선택과목</span>
                 </button>
-                <button type="button" onclick="selectTopic('수학 세특·심화 탐구 주제')" data-topic="수학 세특·심화 탐구 주제"
+                <button type="button" onclick="selectTopic('세특·심화 탐구 주제')" data-topic="세특·심화 탐구 주제"
                   class="topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 transition text-left">
                   <i class="fa-solid fa-book-open-reader text-base text-stone-400"></i>
-                  <span>수학 세특·탐구 주제</span>
+                  <span>세특·탐구 주제</span>
                 </button>
                 <button type="button" onclick="selectTopic('이공계·대학 진로 상담')" data-topic="이공계·대학 진로 상담"
                   class="topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 transition text-left">
@@ -384,7 +388,7 @@
                   <span>기타 자유 상담</span>
                 </button>
               </div>
-              <input type="hidden" id="selectedTopicInput" value="수학 학습법·성적 고민" />
+              <input type="hidden" id="selectedTopicInput" value="학습법·성적 고민" />
             </div>
 
             <div>
@@ -668,27 +672,31 @@
   <footer class="mt-auto border-t border-stone-200/70 bg-white/60 py-5">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500">
       <div>
-        <strong>고등학교 수학과 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
+        <strong>고등학교 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
       </div>
       <div>
-        UI Prototype v3.1 · 브라우저 저장소(LocalStorage) 연동 및 보안 인증 완료
+        UI Prototype v3.3 · 파이어베이스(Firebase) 실시간 멀티기기 연동 완료
       </div>
     </div>
   </footer>
 
   <script>
-    // 브라우저 저장소(localStorage) 연동 데이터 로드/저장 함수
-    function loadStoredData(key, defaultVal) {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : defaultVal;
-    }
+    // 💡 TODO: 본인의 파이어베이스 프로젝트 설정값으로 아래를 채워주세요!
+    const firebaseConfig = {
+     apiKey: "AIzaSyDEWy6N0x4uDbUfmv8StZL-i31ZFaXf2WY",
+  authDomain: "counseling-6ebbc.firebaseapp.com",
+  projectId: "counseling-6ebbc",
+  storageBucket: "counseling-6ebbc.firebasestorage.app",
+  messagingSenderId: "1018361572837",
+  appId: "1:1018361572837:web:4ad4bb8ce6d2fc02c7530c"
+    };
 
-    function saveStoredData(key, val) {
-      localStorage.setItem(key, JSON.stringify(val));
-    }
+    // Firebase 초기화
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // 새로고침해도 유지되는 시간대 및 상담 데이터
-    let availableTimeSlots = loadStoredData('math_counseling_slots', [
+    // 기본 시간대 및 상담 데이터 정의
+    let defaultTimeSlots = [
       { id: 'slot-1', date: '2026-10-19', time: '16:30 ~ 16:50', label: '방과후 1타임' },
       { id: 'slot-2', date: '2026-10-19', time: '16:50 ~ 17:10', label: '방과후 2타임' },
       { id: 'slot-3', date: '2026-10-19', time: '17:10 ~ 17:30', label: '방과후 3타임' },
@@ -697,68 +705,16 @@
       { id: 'slot-6', date: '2026-10-20', time: '13:00 ~ 13:20', label: '점심시간 상담' },
       { id: 'slot-7', date: '2026-10-20', time: '16:30 ~ 16:50', label: '방과후 1타임' },
       { id: 'slot-8', date: '2026-10-20', time: '16:50 ~ 17:10', label: '방과후 2타임' }
-    ]);
+    ];
 
-    let counselingList = loadStoredData('math_counseling_list', [
-      {
-        id: 'c-101',
-        queueNum: '01',
-        studentId: '20105',
-        name: '박지훈',
-        pin: '1234',
-        topic: '수학 학습법·성적 고민',
-        slotId: 'slot-1',
-        date: '2026-10-19',
-        time: '16:30 ~ 16:50',
-        label: '방과후 1타임',
-        studentNote: '개념은 아는 것 같은데 모의고사 4점 문항에서 시간이 부족해요.',
-        status: 'completed',
-        targetMajor: '컴퓨터공학부 / 인공지능학과',
-        universities: [
-          { region: '서울', univ: '서울대학교', div: '국립', dept: '컴퓨터공학부', track: '지역균형', method: '서류+면접', minReq: '3합3 충족', chance: '상향', note: '수학 1등급 필수' },
-          { region: '대전', univ: 'KAIST', div: '국립', dept: '전산학부', track: '일반(특기자)', method: '서류평가', minReq: '없음', chance: '적정', note: '심화 탐구 우수' },
-          { region: '서울', univ: '성균관대학교', div: '사립', dept: '소프트웨어학과', track: '학과모집', method: '서류100%', minReq: '3합5 충족', chance: '안정', note: '내신 1.4 이내 유지' },
-          { region: '서울', univ: '한양대학교', div: '사립', dept: '컴퓨터소프트웨어', track: '정시파이터', method: '수능 100%', minReq: '해당없음', chance: '적정', note: '수학 미적분 만점 목표' },
-          { region: '서울', univ: '중앙대학교', div: '사립', dept: 'AI학과', track: 'CAU융합', method: '면접형', minReq: '3합6 충족', chance: '안정', note: '교과 성취도 우수' },
-          { region: '울산', univ: 'UNIST', div: '국립', dept: 'AI반도체트랙', track: '일반전형', method: '서류+면접', minReq: '없음', chance: '적정', note: '자연계 융합 탐구' }
-        ],
-        targetGrades: { kor: '2등급', eng: '1등급', math: '1등급', sci: '1등급', etc: '만족' },
-        additionalNotes: '지훈이는 수학적 직관이 매우 뛰어나며, 미적분 도함수 활용 단원의 인공지능 경사하강법 탐구 보고서가 매우 훌륭함.',
-        summaryText: '목표 대학 합격을 위해 2학년 내신 1.4등급 방어 및 미적분 기출 30제 분석을 통한 3학년 수능 고득점 전략 확립 완료.'
-      },
-      {
-        id: 'c-102',
-        queueNum: '02',
-        studentId: '20312',
-        name: '이서연',
-        pin: '2468',
-        topic: '수학 세특·심화 탐구 주제',
-        slotId: 'slot-2',
-        date: '2026-10-19',
-        time: '16:50 ~ 17:10',
-        label: '방과후 2타임',
-        studentNote: '인공지능 경사하강법과 미분 단원을 엮어서 탐구 보고서를 쓰고 싶어요.',
-        status: 'in_session',
-        targetMajor: '데이터사이언스학과',
-        universities: [
-          { region: '서울', univ: '고려대학교', div: '사립', dept: '데이터과학과', track: '학업우수', method: '서류+면접', minReq: '4합8 충족', chance: '적정', note: '탐구 세특 연계' },
-          { region: '서울', univ: '연세대학교', div: '사립', dept: '응용통계학과', track: '활동우수', method: '서류평가', minReq: '없음', chance: '상향', note: '확통 심화 연계' },
-          { region: '', univ: '', div: '사립', dept: '', track: '', method: '', minReq: '', chance: '', note: '' },
-          { region: '', univ: '', div: '사립', dept: '', track: '', method: '', minReq: '', chance: '', note: '' },
-          { region: '', univ: '', div: '사립', dept: '', track: '', method: '', minReq: '', chance: '', note: '' },
-          { region: '', univ: '', div: '사립', dept: '', track: '', method: '', minReq: '', chance: '', note: '' }
-        ],
-        targetGrades: { kor: '1등급', eng: '2등급', math: '2등급', sci: '1등급', etc: '통계 우수' },
-        additionalNotes: '데이터사이언스 분야 진학을 위해 확률과 통계 및 미적분 교과 연계 탐구 주제 설정 완료.',
-        summaryText: '세특 활동과 교과 성취도의 유기적 연계를 통한 학생부 경쟁력 강화 지도.'
-      },
+    let defaultCounselingList = [
       {
         id: 'c-103',
         queueNum: '03',
         studentId: '20418',
         name: '김민재',
         pin: '0000',
-        topic: '내신·수능 선택과목(미적/기하/확통)',
+        topic: '내신·수능 최저과목 선택',
         slotId: 'slot-4',
         date: '2026-10-19',
         time: '17:30 ~ 17:50',
@@ -771,14 +727,25 @@
         additionalNotes: '',
         summaryText: ''
       }
-    ]);
+    ];
+
+    let availableTimeSlots = [];
+    let counselingList = [];
 
     let isPrivacyMasked = true;
     let selectedSlotId = 'slot-6';
     let currentEditingStudentId = null;
     let isTeacherAuthenticated = false;
 
-    const ALLOWED_TEACHER_EMAIL = '0092';
+    const ALLOWED_TEACHER_EMAIL = 'agoogoong@gmail.com';
+
+    // 파이어베이스에 데이터 즉시 동기화하는 함수
+    function syncDataToFirebase(collectionName, docId, dataArray) {
+      db.collection(collectionName).doc(docId).set({ items: dataArray })
+        .catch((error) => {
+          console.error("Firebase 저장 오류: ", error);
+        });
+    }
 
     function formatKoreanShortDate(dateStr) {
       if (!dateStr) return '';
@@ -845,7 +812,7 @@
       }, 3200);
     }
 
-    // 교사 인증 (자동 입력 없이 빈 입력창으로 보안 강화)
+    // 교사 인증
     function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
@@ -855,7 +822,7 @@
       const inputEmail = prompt("교사 인증을 위해 구글 이메일을 입력해 주세요:");
       if (inputEmail === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
-        showToast('정학진 선생님 구글 계정으로 인증되었습니다!', 'success');
+        showToast('학진 선생님 구글 계정으로 인증되었습니다!', 'success');
         switchRoleMode('teacher');
       } else if (inputEmail !== null) {
         showToast('등록된 교사 권한이 없는 이메일입니다.', 'warning');
@@ -1069,7 +1036,7 @@
       };
 
       availableTimeSlots.push(newSlot);
-      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+      syncDataToFirebase("counseling_db", "time_slots", availableTimeSlots);
 
       document.getElementById('newSlotTime').value = '';
       document.getElementById('newSlotLabel').value = '';
@@ -1087,11 +1054,27 @@
         return;
       }
       availableTimeSlots = availableTimeSlots.filter(s => s.id !== slotId);
-      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+      syncDataToFirebase("counseling_db", "time_slots", availableTimeSlots);
 
       renderTimeSlots();
       renderTeacherTimeSlots();
       showToast('선택한 상담 시간대가 삭제되었습니다.', 'info');
+    }
+
+    function deleteCounselingRecord(id) {
+      const target = counselingList.find(c => c.id === id);
+      if (!target) return;
+
+      if (confirm(`정말로 ${target.name} (${target.studentId}) 학생의 상담 신청 내역을 삭제하시겠습니까?`)) {
+        counselingList = counselingList.filter(c => c.id !== id);
+        syncDataToFirebase("counseling_db", "counseling_list", counselingList);
+
+        renderHospitalBoard();
+        renderTimeSlots();
+        renderTeacherTimeSlots();
+        renderTeacherList();
+        showToast(`${target.name} 학생의 상담 신청이 삭제되었습니다.`, 'info');
+      }
     }
 
     function renderTeacherTimeSlots() {
@@ -1216,7 +1199,7 @@
       };
 
       counselingList.push(newEntry);
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      syncDataToFirebase("counseling_db", "counseling_list", counselingList);
 
       document.getElementById('inputStudentId').value = '';
       document.getElementById('inputStudentName').value = '';
@@ -1434,9 +1417,15 @@
                 <button onclick="updateStudentStatus('${item.id}', 'completed')" title="완료" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-stone-200 hover:bg-stone-300 text-stone-700 transition">완료</button>
 
                 <button onclick="openFeedbackModal('${item.id}')"
-                  class="px-3.5 py-1.5 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm ml-auto sm:ml-1">
+                  class="px-3.5 py-1.5 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
                   <i class="fa-solid fa-pen-to-square"></i>
                   <span>상담 결과 입력</span>
+                </button>
+
+                <button onclick="deleteCounselingRecord('${item.id}')"
+                  class="px-3.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-regular fa-trash-can"></i>
+                  <span>예약 삭제</span>
                 </button>
               </div>
             </div>
@@ -1608,7 +1597,7 @@
       target.additionalNotes = document.getElementById('modalAdditionalNotes').value.trim();
       target.summaryText = document.getElementById('modalSummaryText').value.trim();
 
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      syncDataToFirebase("counseling_db", "counseling_list", counselingList);
 
       closeFeedbackModal();
       renderTeacherList();
@@ -1625,7 +1614,7 @@
       student.time = targetSlot.time;
       student.label = targetSlot.label;
 
-      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+      syncDataToFirebase("counseling_db", "counseling_list", counselingList);
 
       renderHospitalBoard();
       renderTimeSlots();
@@ -1643,7 +1632,7 @@
       const target = counselingList.find(item => item.id === id);
       if (target) {
         target.status = newStatus;
-        saveStoredData('math_counseling_list', counselingList); // 로컬저장
+        syncDataToFirebase("counseling_db", "counseling_list", counselingList);
 
         renderHospitalBoard();
         renderTimeSlots();
@@ -1708,9 +1697,31 @@
       if (clockEl) clockEl.textContent = `현재 시각 ${hours}:${mins}:${secs}`;
     }
 
+    // 페이지 로드 시 파이어베이스 실시간 데이터 연동
     window.onload = function () {
-      renderHospitalBoard();
-      renderTimeSlots();
+      // 1. 상담 시간대 실시간 동기화
+      db.collection("counseling_db").doc("time_slots").onSnapshot((doc) => {
+        if (doc.exists) {`
+        } else {
+          availableTimeSlots = defaultTimeSlots;
+          syncDataToFirebase("counseling_db", "time_slots", defaultTimeSlots);
+        }
+        renderTimeSlots();
+        if (isTeacherAuthenticated) renderTeacherTimeSlots();
+      });
+
+      // 2. 상담 신청 및 리포트 목록 실시간 동기화
+      db.collection("counseling_db").doc("counseling_list").onSnapshot((doc) => {
+        if (doc.exists) {
+          counselingList = doc.data().items;
+        } else {
+          counselingList = defaultCounselingList;
+          syncDataToFirebase("counseling_db", "counseling_list", defaultCounselingList);
+        }
+        renderHospitalBoard();
+        if (isTeacherAuthenticated) renderTeacherList();
+      });
+
       updateClock();
       setInterval(updateClock, 1000);
     };
