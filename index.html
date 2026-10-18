@@ -6,7 +6,7 @@
   <title>수학 & 진로 상담실 | 실시간 상담 예약 및 피드백 조회</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Pretendard alternative Noto Sans KR & JetBrains Mono for numbers -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -321,14 +321,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="inputStudentId" class="block text-sm font-bold text-stone-700 mb-1.5">
-                  학번 (4자리) <span class="text-rose-500">*</span>
+                  학번 (5자리) <span class="text-rose-500">*</span>
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-stone-400">
                     <i class="fa-solid fa-id-badge"></i>
                   </span>
                   <input id="inputStudentId" type="text" maxlength="5" required
-                    placeholder="예: 2415 (2학년 4반 15번)"
+                    placeholder="예: 20415 (2학년 4반 15번)"
                     class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 focus:border-sage-600 focus:ring-2 focus:ring-sage-500/20 outline-none font-mono text-sm transition" />
                 </div>
               </div>
@@ -540,7 +540,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
           <div>
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-1.5">
-              <i class="fa-solid fa-sliders"></i> 교사용 실시간 상담 컨트롤러 (<span id="teacherEmailBadge" class="font-mono"/span> 인증됨)
+              <i class="fa-solid fa-sliders"></i> 교사용 실시간 상담 컨트롤러 (<span id="teacherEmailBadge" class="font-mono">agoogoong@gmail.com</span> 인증됨)
             </div>
             <h3 class="text-xl sm:text-2xl font-bold text-stone-800">
               상담 가능 시간대 설정 및 전문 입시 상담 입력
@@ -671,13 +671,24 @@
         <strong>고등학교 수학과 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
       </div>
       <div>
-        UI Prototype v3.0 · 구글 로그인 교사 인증 보안 강화 완료
+        UI Prototype v3.1 · 브라우저 저장소(LocalStorage) 연동 및 보안 인증 완료
       </div>
     </div>
   </footer>
 
   <script>
-    let availableTimeSlots = [
+    // 브라우저 저장소(localStorage) 연동 데이터 로드/저장 함수
+    function loadStoredData(key, defaultVal) {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : defaultVal;
+    }
+
+    function saveStoredData(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    // 새로고침해도 유지되는 시간대 및 상담 데이터
+    let availableTimeSlots = loadStoredData('math_counseling_slots', [
       { id: 'slot-1', date: '2026-10-19', time: '16:30 ~ 16:50', label: '방과후 1타임' },
       { id: 'slot-2', date: '2026-10-19', time: '16:50 ~ 17:10', label: '방과후 2타임' },
       { id: 'slot-3', date: '2026-10-19', time: '17:10 ~ 17:30', label: '방과후 3타임' },
@@ -686,9 +697,9 @@
       { id: 'slot-6', date: '2026-10-20', time: '13:00 ~ 13:20', label: '점심시간 상담' },
       { id: 'slot-7', date: '2026-10-20', time: '16:30 ~ 16:50', label: '방과후 1타임' },
       { id: 'slot-8', date: '2026-10-20', time: '16:50 ~ 17:10', label: '방과후 2타임' }
-    ];
+    ]);
 
-    let counselingList = [
+    let counselingList = loadStoredData('math_counseling_list', [
       {
         id: 'c-101',
         queueNum: '01',
@@ -760,7 +771,7 @@
         additionalNotes: '',
         summaryText: ''
       }
-    ];
+    ]);
 
     let isPrivacyMasked = true;
     let selectedSlotId = 'slot-6';
@@ -834,7 +845,8 @@
       }, 3200);
     }
 
-  function requestTeacherLogin() {
+    // 교사 인증 (자동 입력 없이 빈 입력창으로 보안 강화)
+    function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
         return;
@@ -1057,6 +1069,8 @@
       };
 
       availableTimeSlots.push(newSlot);
+      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+
       document.getElementById('newSlotTime').value = '';
       document.getElementById('newSlotLabel').value = '';
 
@@ -1073,6 +1087,8 @@
         return;
       }
       availableTimeSlots = availableTimeSlots.filter(s => s.id !== slotId);
+      saveStoredData('math_counseling_slots', availableTimeSlots); // 로컬저장
+
       renderTimeSlots();
       renderTeacherTimeSlots();
       showToast('선택한 상담 시간대가 삭제되었습니다.', 'info');
@@ -1200,6 +1216,7 @@
       };
 
       counselingList.push(newEntry);
+      saveStoredData('math_counseling_list', counselingList); // 로컬저장
 
       document.getElementById('inputStudentId').value = '';
       document.getElementById('inputStudentName').value = '';
@@ -1591,6 +1608,8 @@
       target.additionalNotes = document.getElementById('modalAdditionalNotes').value.trim();
       target.summaryText = document.getElementById('modalSummaryText').value.trim();
 
+      saveStoredData('math_counseling_list', counselingList); // 로컬저장
+
       closeFeedbackModal();
       renderTeacherList();
       showToast(`${target.name} 학생의 정밀 입시 상담 리포트가 안전하게 저장되었습니다!`);
@@ -1605,6 +1624,8 @@
       student.date = targetSlot.date;
       student.time = targetSlot.time;
       student.label = targetSlot.label;
+
+      saveStoredData('math_counseling_list', counselingList); // 로컬저장
 
       renderHospitalBoard();
       renderTimeSlots();
@@ -1622,6 +1643,8 @@
       const target = counselingList.find(item => item.id === id);
       if (target) {
         target.status = newStatus;
+        saveStoredData('math_counseling_list', counselingList); // 로컬저장
+
         renderHospitalBoard();
         renderTimeSlots();
         renderTeacherTimeSlots();
