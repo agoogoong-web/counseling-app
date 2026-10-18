@@ -834,18 +834,18 @@
       }, 3200);
     }
 
-    function requestTeacherLogin() {
+  function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
         return;
       }
 
-      const inputEmail = prompt("선생님 구글 계정(이메일)을 입력해 주세요:", "agoogoong@gmail.com");
+      const inputEmail = prompt("교사 인증을 위해 구글 이메일을 입력해 주세요:");
       if (inputEmail === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
         showToast('정학진 선생님 구글 계정으로 인증되었습니다!', 'success');
         switchRoleMode('teacher');
-      } else if (inputEmail) {
+      } else if (inputEmail !== null) {
         showToast('등록된 교사 권한이 없는 이메일입니다.', 'warning');
       }
     }
