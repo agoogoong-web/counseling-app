@@ -62,7 +62,6 @@
   </style>
 </head>
 
-<!-- 본문 HTML (기존과 동일하므로 생략 없이 원본 그대로 유지) -->
 <body class="min-h-screen flex flex-col selection:bg-amber-200 selection:text-stone-900 overflow-x-hidden">
   <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -247,6 +246,12 @@
             <h3 class="text-xl sm:text-2xl font-bold text-stone-800">내 상담 확정 시간 & 선생님 피드백 조회</h3>
             <p class="text-sm text-stone-500 mt-1">신청할 때 입력한 <strong>이름</strong>과 <strong>비밀번호</strong>를 입력해 주세요.</p>
           </div>
+          <div class="mb-6 p-3.5 rounded-2xl bg-cream-100 border border-stone-200/80 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-stone-600 flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i> 빠른 조회 (클릭 자동입력):</span>
+            <div class="flex flex-wrap gap-1.5" id="sampleBtnContainer">
+               <!-- 동적으로 채워집니다 (현재 등록된 학생 샘플버튼) -->
+            </div>
+          </div>
           <form onsubmit="handleStudentInquiry(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
             <div class="sm:col-span-5">
               <div class="relative">
@@ -306,13 +311,15 @@
 
         <div class="space-y-4">
           <h4 class="text-base sm:text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fa-solid fa-list-check text-amber-600"></i><span>학생별 상담 현황 및 피드백 입력</span></h4>
-          <div id="teacherStudentList" class="space-y-3"></div>
+          <div id="teacherStudentList" class="space-y-3">
+            <!-- Firebase 데이터 로딩 영역 -->
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 선생님 피드백 입력 모달 (원래와 동일하게 둠) -->
+  <!-- 선생님 피드백 입력 모달 -->
   <div id="feedbackModal" class="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl shadow-2xl border border-stone-200 max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
       <div class="p-5 sm:p-6 bg-cream-100 border-b border-stone-200 flex items-center justify-between shrink-0">
@@ -327,13 +334,12 @@
     </div>
   </div>
 
-  <!-- Firebase 및 동기화 스크립트 -->
+  <!-- Firebase 및 전체 UI 로직 스크립트 -->
   <script type="module">
-    // Firebase V9 Modular SDK 불러오기
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ✅ 이곳에 Firebase 콘솔에서 발급받은 본인의 설정을 붙여넣으세요.
+    // ✅ 발급받은 Firebase Config로 변경 필수
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY_HERE",
       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -346,7 +352,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 글로벌 상태 변수
     let availableTimeSlots = [];
     let counselingList = [];
     let isPrivacyMasked = true;
@@ -354,13 +359,9 @@
     let currentEditingStudentId = null;
     let isTeacherAuthenticated = false;
 
-    const ALLOWED_TEACHER_EMAIL = '0092'; // 선생님 인증번호
+    const ALLOWED_TEACHER_EMAIL = '0092'; 
 
-    // ----------------------------------------------------
-    // 실시간 동기화 (onSnapshot) 리스너 설정
-    // ----------------------------------------------------
-    
-    // 1. 상담 시간대 데이터 동기화
+    // Firebase 실시간 동기화
     onSnapshot(collection(db, "math_counseling_slots"), (snapshot) => {
       const slots = [];
       snapshot.forEach(doc => slots.push({ id: doc.id, ...doc.data() }));
@@ -373,7 +374,6 @@
       }
     });
 
-    // 2. 학생 신청 데이터 동기화
     onSnapshot(collection(db, "math_counseling_list"), (snapshot) => {
       const records = [];
       snapshot.forEach(doc => records.push({ id: doc.id, ...doc.data() }));
@@ -381,17 +381,14 @@
       
       renderHospitalBoard();
       renderTimeSlots();
+      renderSampleButtons();
       if (isTeacherAuthenticated) {
         renderTeacherTimeSlots();
         renderTeacherList();
       }
     });
 
-
-    // ----------------------------------------------------
-    // UI 렌더링 및 유틸리티 함수들 (기존 로직과 100% 동일)
-    // ----------------------------------------------------
-
+    // 유틸리티 함수
     function formatKoreanShortDate(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
@@ -434,40 +431,263 @@
       }, 3200);
     }
 
-    // 학생 <-> 선생님 역할 전환
-    function switchRoleMode(role) {
-      const studentSec = document.getElementById('studentWorkspace');
-      const teacherSec = document.getElementById('teacherWorkspace');
-      const btnStudent = document.getElementById('btnStudentRole');
-      const btnTeacher = document.getElementById('btnTeacherRole');
+    // ----------------------------------------------------
+    // [완전 복구된 렌더링 함수들]
+    // ----------------------------------------------------
 
-      if (role === 'student') {
-        studentSec.classList.remove('hidden'); teacherSec.classList.add('hidden');
-        btnStudent.className = 'px-3 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition flex items-center gap-1.5';
-        btnTeacher.className = 'px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition flex items-center gap-1.5';
+    // 1. 전광판 렌더링
+    function renderHospitalBoard() {
+      const inSessionItems = counselingList.filter(item => item.status === 'in_session');
+      const waitingItems = counselingList.filter(item => item.status === 'confirmed').slice().sort(sortByDateTime);
+      const completedItems = counselingList.filter(item => item.status === 'completed').slice().sort(sortByDateTime);
+
+      const inSessionContainer = document.getElementById('inSessionBoard');
+      document.getElementById('inSessionCountBadge').textContent = `${inSessionItems.length}명 진행중`;
+
+      if (inSessionItems.length === 0) {
+        inSessionContainer.innerHTML = `
+          <div class="bg-white/10 rounded-2xl p-5 text-center backdrop-blur-sm border border-white/10">
+            <p class="text-base font-bold text-emerald-100">현재 진행 중인 상담이 없습니다</p>
+            <p class="text-xs text-emerald-100/80 mt-1">다음 예약 확정 학생은 호출 시 입실해 주세요.</p>
+          </div>
+        `;
       } else {
-        if (!isTeacherAuthenticated) { requestTeacherLogin(); return; }
-        studentSec.classList.add('hidden'); teacherSec.classList.remove('hidden');
-        btnTeacher.className = 'px-3 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition flex items-center gap-1.5';
-        btnStudent.className = 'px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition flex items-center gap-1.5';
-        renderTeacherTimeSlots();
-        renderTeacherList();
+        const current = inSessionItems[0];
+        inSessionContainer.innerHTML = `
+          <div class="bg-white/15 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/20 pulse-badge">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="font-mono text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-emerald-400/20 text-emerald-100 font-bold">
+                접수번호 #${current.queueNum}
+              </span>
+              <span class="text-xs text-emerald-100 font-mono">
+                <i class="fa-regular fa-clock mr-1"></i>${formatKoreanShortDate(current.date)} ${current.time}
+              </span>
+            </div>
+            <div class="flex items-baseline gap-2.5 my-1">
+              <span class="text-2xl sm:text-3xl font-extrabold tracking-tight">${formatStudentName(current.name)}</span>
+              <span class="text-sm text-emerald-100 font-mono">(${current.studentId})</span>
+            </div>
+            <p class="text-xs text-emerald-100/90 mt-2 flex items-center gap-1.5"><i class="fa-solid fa-tag text-emerald-300"></i><span>주제: ${current.topic}</span></p>
+          </div>
+        `;
+      }
+
+      const waitingListEl = document.getElementById('waitingBoardList');
+      document.getElementById('waitingCountBadge').textContent = `확정 대기 ${waitingItems.length}명`;
+      if (waitingItems.length === 0) {
+        waitingListEl.innerHTML = `<div class="py-8 text-center text-xs text-stone-400">현재 예약 확정된 대기 학생이 없습니다.</div>`;
+      } else {
+        waitingListEl.innerHTML = waitingItems.map((item, idx) => `
+          <div class="flex items-center justify-between p-2.5 rounded-2xl border ${idx === 0 ? 'bg-amber-50/80 border-amber-300 shadow-sm' : 'bg-stone-50/70 border-stone-200/70'}">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl font-mono font-bold text-xs flex items-center justify-center ${idx === 0 ? 'bg-amber-500 text-white shadow-sm' : 'bg-stone-200 text-stone-700'}">${idx + 1}순위</span>
+              <div>
+                <div class="flex items-center gap-1.5"><span class="font-bold text-sm text-stone-800">${formatStudentName(item.name)}</span><span class="text-xs font-mono text-stone-400">${item.studentId}</span></div>
+                <p class="text-[11px] text-stone-600 font-mono font-medium">${formatKoreanShortDate(item.date)} ${item.time}</p>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg ${idx === 0 ? 'bg-amber-500 text-white' : 'bg-emerald-100 text-emerald-700'}">${idx === 0 ? '다음 호출' : '예약확정'}</span>
+          </div>
+        `).join('');
+      }
+
+      const completedListEl = document.getElementById('completedBoardList');
+      document.getElementById('completedCountBadge').textContent = `${completedItems.length}명 완료`;
+      if (completedItems.length === 0) {
+        completedListEl.innerHTML = `<div class="py-8 text-center text-xs text-stone-400">아직 완료된 상담이 없습니다.</div>`;
+      } else {
+        completedListEl.innerHTML = completedItems.map(item => `
+          <div class="flex items-center justify-between p-2.5 rounded-2xl bg-white/80 border border-stone-200/70">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-sage-100 text-sage-700 font-mono text-xs font-bold flex items-center justify-center">✓</span>
+              <div><span class="font-bold text-xs text-stone-700">${formatStudentName(item.name)}</span><span class="text-[11px] font-mono text-stone-400 ml-1">${item.studentId}</span></div>
+            </div>
+            <span class="text-[11px] font-medium text-sage-600 bg-sage-50 px-2 py-0.5 rounded-md border border-sage-100">피드백 완료</span>
+          </div>
+        `).join('');
       }
     }
 
-    function switchStudentTab(tab) {
-      switchRoleMode('student');
-      const panelApply = document.getElementById('tabPanelApply');
-      const panelInquiry = document.getElementById('tabPanelInquiry');
-      if (tab === 'apply') {
-        panelApply.classList.remove('hidden'); panelInquiry.classList.add('hidden');
-      } else {
-        panelApply.classList.add('hidden'); panelInquiry.classList.remove('hidden');
+    // 2. 학생 신청 - 시간대 버튼 렌더링
+    function renderTimeSlots() {
+      const container = document.getElementById('timeSlotContainer');
+      const sortedSlots = availableTimeSlots.slice().sort(sortByDateTime);
+
+      const visibleSlots = sortedSlots.filter(slot => {
+        const record = counselingList.find(c => c.slotId === slot.id);
+        return !record || record.status === 'pending';
+      });
+
+      const isCurrentSelectionAvailable = visibleSlots.some(s => {
+        const rec = counselingList.find(c => c.slotId === s.id);
+        return s.id === selectedSlotId && !rec;
+      });
+
+      if (!isCurrentSelectionAvailable) {
+        const firstAvailable = visibleSlots.find(s => !counselingList.some(c => c.slotId === s.id));
+        selectedSlotId = firstAvailable ? firstAvailable.id : '';
       }
+
+      if (visibleSlots.length === 0) {
+        container.innerHTML = `<div class="col-span-full p-5 rounded-2xl border border-stone-200 bg-stone-50 text-center text-xs text-stone-500">현재 신청 가능한 시간대가 없습니다.</div>`;
+        document.getElementById('selectedTimeInput').value = '';
+        return;
+      }
+
+      container.innerHTML = visibleSlots.map(slot => {
+        const pendingRecord = counselingList.find(c => c.slotId === slot.id && c.status === 'pending');
+        const isSelected = selectedSlotId === slot.id && !pendingRecord;
+        const korDate = formatKoreanShortDate(slot.date);
+
+        if (pendingRecord) {
+          return `
+            <button type="button" disabled class="p-3 rounded-xl border border-amber-300 bg-amber-50/70 text-amber-900 text-left cursor-not-allowed transition">
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-mono font-bold text-xs text-amber-900">${korDate} ${slot.time}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-800 shrink-0">예약 대기</span>
+              </div>
+              <p class="text-[11px] text-amber-700/80 mt-1 truncate">${slot.label} · 선생님 확인중</p>
+            </button>
+          `;
+        }
+        return `
+          <button type="button" onclick="selectTimeSlot('${slot.id}')" class="p-3 rounded-xl border text-left transition ${isSelected ? 'border-2 border-sage-600 bg-sage-50 text-sage-900 shadow-sm' : 'border-stone-200 hover:border-sage-500 bg-white text-stone-700'}">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-mono font-bold text-xs">${korDate} ${slot.time}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isSelected ? 'bg-sage-600 text-white' : 'bg-sage-100 text-sage-700'} shrink-0">${isSelected ? '선택됨 ✓' : '상담 가능'}</span>
+            </div>
+            <p class="text-[11px] text-stone-500 mt-1 truncate">${slot.label}</p>
+          </button>
+        `;
+      }).join('');
+      document.getElementById('selectedTimeInput').value = selectedSlotId;
+    }
+
+    // 3. 선생님 - 시간대 관리 렌더링
+    function renderTeacherTimeSlots() {
+      const listEl = document.getElementById('teacherSlotManageList');
+      const countEl = document.getElementById('slotCountSummary');
+
+      const sorted = availableTimeSlots.slice().sort((a, b) => {
+        const recA = counselingList.find(c => c.slotId === a.id);
+        const recB = counselingList.find(c => c.slotId === b.id);
+        const isCompletedA = recA && recA.status === 'completed' ? 1 : 0;
+        const isCompletedB = recB && recB.status === 'completed' ? 1 : 0;
+        if (isCompletedA !== isCompletedB) return isCompletedA - isCompletedB;
+        return sortByDateTime(a, b);
+      });
+
+      if (countEl) countEl.textContent = `전체 시간대 ${sorted.length}개`;
+      if (!listEl) return;
+
+      listEl.innerHTML = sorted.map(slot => {
+        const record = counselingList.find(c => c.slotId === slot.id);
+        const isCompleted = record && record.status === 'completed';
+        let statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sage-100 text-sage-700">상담가능</span>`;
+        if (record) {
+          if (record.status === 'pending') statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">예약대기 (${record.name})</span>`;
+          else if (record.status === 'on_hold') statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">보류 (${record.name})</span>`;
+          else if (record.status === 'in_session') statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">상담중 (${record.name})</span>`;
+          else if (record.status === 'confirmed') statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-900">예약확정 (${record.name})</span>`;
+          else statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-200 text-stone-500">상담완료 (${record.name})</span>`;
+        }
+
+        return `
+          <div class="p-3 rounded-xl ${isCompleted ? 'bg-stone-100/80 border-stone-200/60 opacity-75' : 'bg-white border-stone-200/90'} border flex items-center justify-between gap-2 transition">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5"><span class="font-mono font-bold text-xs ${isCompleted ? 'text-stone-400 line-through' : 'text-stone-800'}">${formatKoreanShortDate(slot.date)} ${slot.time}</span></div>
+              <div class="flex items-center gap-1.5 mt-1"><span class="text-[11px] text-stone-500 truncate">${slot.label}</span>${statusBadge}</div>
+            </div>
+            ${!record ? `<button type="button" onclick="deleteTeacherTimeSlot('${slot.id}')" title="시간대 삭제" class="w-7 h-7 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0"><i class="fa-regular fa-trash-can text-xs"></i></button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 4. [가장 중요한 부분] 선생님 - 신청 학생 관리 리스트 렌더링
+    function renderTeacherList() {
+      const container = document.getElementById('teacherStudentList');
+      if (!container) return;
+
+      const sortedStudents = counselingList.slice().sort((a, b) => {
+        const isCompletedA = a.status === 'completed' ? 1 : 0;
+        const isCompletedB = b.status === 'completed' ? 1 : 0;
+        if (isCompletedA !== isCompletedB) return isCompletedA - isCompletedB;
+        return sortByDateTime(a, b);
+      });
+      const sortedSlots = availableTimeSlots.slice().sort(sortByDateTime);
+
+      if (sortedStudents.length === 0) {
+         container.innerHTML = `<div class="p-6 text-center text-stone-400 text-sm border border-stone-200 bg-stone-50 rounded-2xl">현재 신청한 학생 내역이 없습니다.</div>`;
+         return;
+      }
+
+      container.innerHTML = sortedStudents.map(item => {
+        const emptyOrCurrentSlots = sortedSlots.filter(slot => {
+          if (slot.id === item.slotId) return true;
+          return !counselingList.some(c => c.slotId === slot.id && c.id !== item.id);
+        });
+
+        const slotOptionsHtml = emptyOrCurrentSlots.map(slot => {
+          const isCurrent = slot.id === item.slotId;
+          return `<option value="${slot.id}" ${isCurrent ? 'selected' : ''}>${formatKoreanShortDate(slot.date)} ${slot.time} (${slot.label})${isCurrent ? ' [현재 배정]' : ' [빈 시간]'}</option>`;
+        }).join('');
+
+        let statusBadgeClass = 'bg-amber-100 text-amber-800';
+        let statusText = '예약대기';
+        if (item.status === 'confirmed') { statusText = '예약확정'; statusBadgeClass = 'bg-amber-500/15 text-amber-900'; }
+        else if (item.status === 'in_session') { statusText = '상담중'; statusBadgeClass = 'bg-emerald-100 text-emerald-800'; }
+        else if (item.status === 'on_hold') { statusText = '보류'; statusBadgeClass = 'bg-rose-100 text-rose-800'; }
+        else if (item.status === 'completed') { statusText = '상담완료'; statusBadgeClass = 'bg-stone-200 text-stone-600'; }
+
+        return `
+        <div class="p-4 rounded-2xl border ${item.status === 'completed' ? 'bg-stone-100/70 border-stone-200 opacity-80' : 'bg-white border-stone-200'} space-y-3 shadow-sm transition w-full max-w-full overflow-hidden box-border">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="px-2.5 py-1 rounded-xl bg-stone-800 text-white font-mono font-bold text-xs shrink-0">#${item.queueNum}</span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-sm text-stone-900">${item.name}</span>
+                  <span class="font-mono text-xs text-stone-500">(${item.studentId})</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadgeClass}">${statusText}</span>
+                </div>
+                <p class="text-xs text-stone-500 mt-0.5 truncate">주제: ${item.topic}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100">
+              <select onchange="changeStudentSlot('${item.id}', this.value)" class="w-full sm:w-auto px-2.5 py-2 rounded-xl border border-stone-300 bg-cream-50 font-mono text-xs text-stone-800 focus:border-sage-600 outline-none">
+                ${slotOptionsHtml}
+              </select>
+              <div class="flex flex-wrap items-center gap-1 w-full sm:w-auto justify-end">
+                <button onclick="updateStudentStatus('${item.id}', 'confirmed')" title="확정" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 transition">확정</button>
+                <button onclick="updateStudentStatus('${item.id}', 'in_session')" title="상담중" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition">상담중</button>
+                <button onclick="updateStudentStatus('${item.id}', 'on_hold')" title="보류" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 transition">보류</button>
+                <button onclick="updateStudentStatus('${item.id}', 'completed')" title="완료" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-stone-200 hover:bg-stone-300 text-stone-700 transition">완료</button>
+                <button onclick="openFeedbackModal('${item.id}')" class="px-3.5 py-1.5 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-solid fa-pen-to-square"></i><span>상담 결과 입력</span>
+                </button>
+                <button onclick="deleteCounselingRecord('${item.id}')" class="px-3.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-regular fa-trash-can"></i><span>삭제</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+
+    // 학생 화면 샘플 버튼 렌더링
+    function renderSampleButtons() {
+      const btnContainer = document.getElementById('sampleBtnContainer');
+      if(!btnContainer) return;
+      btnContainer.innerHTML = counselingList.slice(0, 3).map(c => 
+        `<button type="button" onclick="fillSampleInquiry('${c.name}', '${c.pin}')" class="text-xs px-2.5 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-sage-600 text-stone-700 font-medium transition">${c.name} (${c.status === 'completed' ? '리포트있음' : '대기/진행중'})</button>`
+      ).join('');
     }
 
     // ----------------------------------------------------
-    // Firestore 쓰기 함수 (localStorage 대체 부분)
+    // Firestore 쓰기 / 업데이트 액션들
     // ----------------------------------------------------
 
     async function handleStudentSubmit(event) {
@@ -488,25 +708,22 @@
       const docId = 'c-' + Date.now();
       
       const newEntry = {
-        queueNum: nextNum,
-        studentId, name, pin, topic, slotId: chosenSlot.id,
+        queueNum: nextNum, studentId, name, pin, topic, slotId: chosenSlot.id,
         date: chosenSlot.date, time: chosenSlot.time, label: chosenSlot.label,
-        studentNote: note || '사전 메모 없음',
-        status: 'pending',
+        studentNote: note || '사전 메모 없음', status: 'pending',
         targetMajor: '',
         universities: Array(6).fill().map(() => ({ region: '', univ: '', div: '사립', dept: '', track: '', method: '', minReq: '', chance: '', note: '' })),
         targetGrades: { kor: '', eng: '', math: '', sci: '', etc: '' },
         additionalNotes: '', summaryText: ''
       };
 
-      // Firestore 쓰기
       await setDoc(doc(db, "math_counseling_list", docId), newEntry);
 
       document.getElementById('inputStudentId').value = '';
       document.getElementById('inputStudentName').value = '';
       document.getElementById('inputStudentNote').value = '';
       document.getElementById('inputStudentPin').value = '';
-      showToast(`${name} 학생 상담 신청이 '예약 대기' 상태로 접수되었습니다!`, 'success');
+      showToast(`${name} 학생 상담 신청이 접수되었습니다!`, 'success');
     }
 
     async function handleAddTimeSlot(event) {
@@ -518,9 +735,7 @@
       if (!dateVal || !timeVal || !labelVal) return showToast('항목을 모두 입력해 주세요.', 'warning');
 
       const docId = 'slot-' + Date.now();
-      const newSlot = { date: dateVal, time: timeVal, label: labelVal };
-
-      await setDoc(doc(db, "math_counseling_slots", docId), newSlot);
+      await setDoc(doc(db, "math_counseling_slots", docId), { date: dateVal, time: timeVal, label: labelVal });
 
       document.getElementById('newSlotTime').value = '';
       document.getElementById('newSlotLabel').value = '';
@@ -530,7 +745,6 @@
     async function deleteTeacherTimeSlot(slotId) {
       const linkedStudent = counselingList.find(c => c.slotId === slotId);
       if (linkedStudent) return showToast('학생이 신청한 시간대는 삭제할 수 없습니다.', 'warning');
-      
       await deleteDoc(doc(db, "math_counseling_slots", slotId));
       showToast('시간대가 삭제되었습니다.', 'info');
     }
@@ -547,7 +761,6 @@
     async function changeStudentSlot(studentId, newSlotId) {
       const targetSlot = availableTimeSlots.find(s => s.id === newSlotId);
       if (!targetSlot) return;
-      
       await updateDoc(doc(db, "math_counseling_list", studentId), {
         slotId: targetSlot.id, date: targetSlot.date, time: targetSlot.time, label: targetSlot.label
       });
@@ -599,31 +812,62 @@
       };
 
       await updateDoc(doc(db, "math_counseling_list", id), updates);
-      closeFeedbackModal();
+      window.closeFeedbackModal();
       showToast('정밀 입시 상담 리포트가 안전하게 저장되었습니다!');
     }
 
     // ----------------------------------------------------
-    // 모듈형 스크립트 대응을 위한 전역(Window) 바인딩
-    // HTML 태그의 onclick 속성에서 호출할 수 있도록 연결
+    // 모듈 스코프 -> Window 전역 바인딩 (HTML에서 호출 가능하도록)
     // ----------------------------------------------------
-    window.switchRoleMode = switchRoleMode;
-    window.switchStudentTab = switchStudentTab;
+    
+    window.switchRoleMode = function(role) {
+      const studentSec = document.getElementById('studentWorkspace');
+      const teacherSec = document.getElementById('teacherWorkspace');
+      const btnStudent = document.getElementById('btnStudentRole');
+      const btnTeacher = document.getElementById('btnTeacherRole');
+
+      if (role === 'student') {
+        studentSec.classList.remove('hidden'); teacherSec.classList.add('hidden');
+        btnStudent.className = 'px-3 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition flex items-center gap-1.5';
+        btnTeacher.className = 'px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition flex items-center gap-1.5';
+      } else {
+        if (!isTeacherAuthenticated) { window.requestTeacherLogin(); return; }
+        studentSec.classList.add('hidden'); teacherSec.classList.remove('hidden');
+        btnTeacher.className = 'px-3 py-1.5 rounded-lg bg-white text-stone-900 shadow-sm transition flex items-center gap-1.5';
+        btnStudent.className = 'px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition flex items-center gap-1.5';
+        renderTeacherTimeSlots();
+        renderTeacherList();
+      }
+    };
+
+    window.switchStudentTab = function(tab) {
+      window.switchRoleMode('student');
+      const panelApply = document.getElementById('tabPanelApply');
+      const panelInquiry = document.getElementById('tabPanelInquiry');
+      if (tab === 'apply') {
+        panelApply.classList.remove('hidden'); panelInquiry.classList.add('hidden');
+      } else {
+        panelApply.classList.add('hidden'); panelInquiry.classList.remove('hidden');
+      }
+    };
+
     window.requestTeacherLogin = function() {
-      if (isTeacherAuthenticated) { switchRoleMode('teacher'); return; }
+      if (isTeacherAuthenticated) { window.switchRoleMode('teacher'); return; }
       const input = prompt("교사 인증을 위해 인증번호를 입력해 주세요:");
       if (input === ALLOWED_TEACHER_EMAIL) {
         isTeacherAuthenticated = true;
         showToast('학진 선생님으로 인증되었습니다!', 'success');
-        switchRoleMode('teacher');
+        window.switchRoleMode('teacher');
       } else if (input !== null) { showToast('인증번호가 잘못 되었습니다.', 'warning'); }
     };
+
     window.togglePrivacyMask = function() {
       isPrivacyMasked = !isPrivacyMasked;
       document.getElementById('privacyText').textContent = isPrivacyMasked ? '전광판 이름 보호: ON' : '전광판 이름 보호: OFF (실명 표시)';
       document.getElementById('privacyIcon').className = isPrivacyMasked ? 'fa-solid fa-user-shield text-sage-600' : 'fa-solid fa-eye text-amber-600';
       renderHospitalBoard();
     };
+
     window.selectTopic = function(t) {
       document.getElementById('selectedTopicInput').value = t;
       document.querySelectorAll('.topic-chip').forEach(chip => {
@@ -632,12 +876,14 @@
           : 'topic-chip p-3 rounded-xl border border-stone-200 hover:border-stone-300 bg-white text-stone-700 font-medium text-xs sm:text-sm flex items-center gap-2 text-left';
       });
     };
+
     window.selectTimeSlot = function(id) { selectedSlotId = id; renderTimeSlots(); };
     window.togglePinVisibility = function(inputId, iconId) {
       const input = document.getElementById(inputId), icon = document.getElementById(iconId);
       if (input.type === 'password') { input.type = 'text'; icon.className = 'fa-regular fa-eye-slash'; } 
       else { input.type = 'password'; icon.className = 'fa-regular fa-eye'; }
     };
+
     window.handleStudentSubmit = handleStudentSubmit;
     window.handleAddTimeSlot = handleAddTimeSlot;
     window.deleteTeacherTimeSlot = deleteTeacherTimeSlot;
@@ -645,11 +891,17 @@
     window.changeStudentSlot = changeStudentSlot;
     window.updateStudentStatus = updateStudentStatus;
     window.saveModalFeedback = saveModalFeedback;
+    window.fillSampleInquiry = function(name, pin) {
+      document.getElementById('inquiryName').value = name;
+      document.getElementById('inquiryPin').value = pin;
+      window.handleStudentInquiry(new Event('submit'));
+    };
 
     window.closeFeedbackModal = function() {
       document.getElementById('feedbackModal').classList.replace('flex', 'hidden');
       currentEditingStudentId = null;
     };
+
     window.openFeedbackModal = function(id) {
       currentEditingStudentId = id;
       const item = counselingList.find(c => c.id === id);
@@ -658,7 +910,6 @@
       document.getElementById('modalStudentBadge').textContent = `학번 ${item.studentId} · ${item.name}`;
       document.getElementById('modalTitle').textContent = `${item.name} 학생 상담 리포트`;
 
-      // 대학 6개 입력 폼 등 기존과 완벽히 동일하게 세팅 (길이 관계상 생략하지 않고 위 saveModalFeedback 대응대로 구현)
       const univInputs = item.universities.map((u, i) => `
         <div class="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 space-y-2.5 text-xs">
           <div class="flex items-center justify-between font-mono font-bold text-stone-700 border-b border-stone-200/80 pb-1.5">
@@ -701,9 +952,6 @@
       document.getElementById('feedbackModal').classList.replace('hidden', 'flex');
     };
 
-    // 결과 조회 및 DOM 업데이트 로직 렌더링 함수들...
-    // 기존의 renderHospitalBoard, renderTimeSlots, renderTeacherTimeSlots, renderTeacherList, handleStudentInquiry 그대로 유지
-    
     window.handleStudentInquiry = function(event) {
       if(event) event.preventDefault();
       const name = document.getElementById('inquiryName').value.trim();
@@ -716,21 +964,96 @@
         return;
       }
       
-      // 조회 결과 렌더링 (기존 코드 HTML 구조 동일)
+      const statusMap = {
+        pending: { label: '예약 대기중', badgeClass: 'bg-stone-200 text-stone-700', icon: 'fa-hourglass-half' },
+        confirmed: { label: '상담 예약 확정', badgeClass: 'bg-amber-100 text-amber-800', icon: 'fa-calendar-check' },
+        in_session: { label: '현재 상담 진행 중', badgeClass: 'bg-emerald-100 text-emerald-800', icon: 'fa-comments' },
+        on_hold: { label: '상담 보류', badgeClass: 'bg-rose-100 text-rose-800', icon: 'fa-circle-pause' },
+        completed: { label: '상담 완료 및 리포트 도착', badgeClass: 'bg-sage-100 text-sage-700', icon: 'fa-award' }
+      };
+      const st = statusMap[matched.status] || statusMap.pending;
+
       const univValidItems = matched.universities ? matched.universities.filter(u => u.univ) : [];
-      // (기존 renderStudentInquiry 내부 html과 동일하게 구성 - 생략 없이 적용됨)
-      // *글자수 제한 방지를 위해 핵심 렌더 로직은 기존 코드를 재사용하면 됩니다*
+      const univCardsHtml = univValidItems.length > 0 ? univValidItems.map((u, idx) => `
+        <div class="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-2">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-stone-800 text-white font-mono text-xs font-bold flex items-center justify-center">${idx + 1}</span>
+              <span class="font-bold text-stone-900 text-sm">${u.univ}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.div === '국립' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-stone-100 text-stone-700'}">${u.div || '사립'}</span>
+            </div>
+            <span class="text-xs font-bold px-2 py-0.5 rounded ${u.chance === '상향' ? 'bg-rose-50 text-rose-700' : u.chance === '적정' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">${u.chance || '적정'}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs text-stone-600">
+            <div><span class="text-stone-400">지역/학과:</span> ${u.region || '-'} / <strong class="text-stone-800">${u.dept || '-'}</strong></div>
+            <div><span class="text-stone-400">전형:</span> ${u.track || '-'} (${u.method || '-'})</div>
+            <div><span class="text-stone-400">수능최저:</span> <span class="font-mono font-medium">${u.minReq || '없음'}</span></div>
+            <div><span class="text-stone-400">비고:</span> ${u.note || '-'}</div>
+          </div>
+        </div>
+      `).join('') : `<div class="p-4 text-center text-stone-400 text-xs bg-white rounded-2xl border border-stone-200">등록된 대학 지원 전략 데이터가 없습니다.</div>`;
+
+      const g = matched.targetGrades || {};
+
+      resultContainer.innerHTML = `
+        <div id="printReportSection" class="rounded-3xl border-2 border-sage-500/30 bg-cream-50 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-stone-200">
+            <div class="flex items-center gap-3">
+              <span class="w-11 h-11 rounded-2xl bg-sage-600 text-white font-mono font-bold flex items-center justify-center text-base">#${matched.queueNum}</span>
+              <div>
+                <h4 class="text-lg font-bold text-stone-900">${matched.name} <span class="text-sm font-mono font-normal text-stone-500">(${matched.studentId})</span></h4>
+                <p class="text-xs text-stone-500">주제: ${matched.topic}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="window.print()" class="no-print px-3.5 py-2 rounded-xl bg-stone-800 text-white font-bold text-xs hover:bg-stone-900 transition flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-print"></i> 인쇄</button>
+              <span class="px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${st.badgeClass}"><i class="fa-solid ${st.icon}"></i><span>${st.label}</span></span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-4 rounded-2xl bg-white border border-stone-200/80">
+              <span class="text-xs text-stone-400 block mb-1">상담 일시</span>
+              <p class="font-mono font-bold text-stone-800 text-sm"><i class="fa-regular fa-clock text-sage-600 mr-1.5"></i>${formatFullSlotString(matched)}</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-white border border-stone-200/80">
+              <span class="text-xs text-stone-400 block mb-1">학생 고민 메모</span>
+              <p class="text-stone-700 text-xs sm:text-sm">${matched.studentNote}</p>
+            </div>
+          </div>
+          <div class="space-y-4 pt-2">
+            <div class="p-4 rounded-2xl bg-white border border-sage-500/30 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><span class="text-xs text-stone-400 block font-bold mb-1">1. 희망계열/학과</span><p class="text-base font-bold text-sage-700">${matched.targetMajor || '미입력'}</p></div>
+              <div><span class="text-xs text-stone-400 block font-bold mb-1">3. 목표 등급</span>
+                <div class="flex flex-wrap gap-2 text-xs font-mono font-bold text-stone-800">
+                  <span class="px-2 py-1 rounded bg-stone-100">국어: ${g.kor || '-'}</span><span class="px-2 py-1 rounded bg-stone-100">수학: ${g.math || '-'}</span>
+                  <span class="px-2 py-1 rounded bg-stone-100">영어: ${g.eng || '-'}</span><span class="px-2 py-1 rounded bg-stone-100">탐구: ${g.sci || '-'}</span><span class="px-2 py-1 rounded bg-stone-100">그외: ${g.etc || '-'}</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl bg-stone-100/80 border border-stone-200/80 space-y-3">
+              <span class="text-xs text-stone-800 font-bold block flex items-center gap-1.5"><i class="fa-solid fa-graduation-cap text-amber-600"></i> 2. 대학 지원 전략 (${univValidItems.length}개교)</span>
+              <div class="space-y-2.5">${univCardsHtml}</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-4 rounded-2xl bg-white border border-stone-200/80">
+                <span class="text-xs text-stone-400 block font-bold mb-1">4. 추가 코칭</span>
+                <p class="text-xs sm:text-sm text-stone-700 whitespace-pre-line">${matched.additionalNotes || '없음'}</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-sage-50 border border-sage-200">
+                <span class="text-xs text-sage-800 block font-bold mb-1"><i class="fa-solid fa-star text-amber-600 mr-1"></i> 5. 종합 의견</span>
+                <p class="text-xs sm:text-sm text-stone-800 font-medium whitespace-pre-line">${matched.summaryText || '없음'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
     };
 
-    function renderHospitalBoard() { /* 기존 함수 본문 동일 */ }
-    function renderTimeSlots() { /* 기존 함수 본문 동일 */ }
-    function renderTeacherTimeSlots() { /* 기존 함수 본문 동일 */ }
-    function renderTeacherList() { /* 기존 함수 본문 동일 */ }
-    
     // 시계 갱신
     setInterval(() => {
       const now = new Date();
-      document.getElementById('liveClock').textContent = `현재 시각 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      const el = document.getElementById('liveClock');
+      if(el) el.textContent = `현재 시각 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     }, 1000);
 
   </script>
