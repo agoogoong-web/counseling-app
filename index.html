@@ -675,13 +675,13 @@
         <strong>고등학교 상담 시스템</strong> · 학생들의 꿈과 성장을 응원합니다.
       </div>
       <div>
-        UI Prototype v3.4 · Firebase 실시간 멀티기기 연동 완료
+        UI Prototype v3.5 · Firebase 실시간 멀티기기 연동 및 초기화 방지 완료
       </div>
     </div>
   </footer>
 
   <script>
-    // 1. 제공해주신 Firebase 프로젝트 설정 적용
+    // 파이어베이스 프로젝트 설정
     const firebaseConfig = {
       apiKey: "AIzaSyDEWy6N0x4uDbUfmv8StZL-i31ZFaXf2WY",
       authDomain: "counseling-6ebbc.firebaseapp.com",
@@ -691,13 +691,12 @@
       appId: "1:1018361572837:web:4ad4bb8ce6d2fc02c7530c"
     };
 
-    // Firebase 초기화 (오류 방지 안전장치 추가)
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.firestore();
 
-    // 기본 시간대 및 상담 데이터 정의
+    // 기본 데이터 정의
     let defaultTimeSlots = [
       { id: 'slot-1', date: '2026-10-19', time: '16:30 ~ 16:50', label: '방과후 1타임' },
       { id: 'slot-2', date: '2026-10-19', time: '16:50 ~ 17:10', label: '방과후 2타임' },
@@ -741,7 +740,7 @@
 
     const ALLOWED_TEACHER_EMAIL = '0092';
 
-    // Firebase 데이터 동기화 함수
+    // 파이어베이스 데이터 동기화 함수 (데이터가 없을 때만 최초 기본값 세팅 방지 처리)
     function syncDataToFirebase(collectionName, docId, dataArray) {
       db.collection(collectionName).doc(docId).set({ items: dataArray })
         .catch((error) => {
@@ -814,7 +813,7 @@
       }, 3200);
     }
 
-    // 교사 인증 (인증번호 0092)
+    // 교사 인증
     function requestTeacherLogin() {
       if (isTeacherAuthenticated) {
         switchRoleMode('teacher');
@@ -1699,11 +1698,11 @@
       if (clockEl) clockEl.textContent = `현재 시각 ${hours}:${mins}:${secs}`;
     }
 
-    // 앱 실행 시 Firestore 실시간 구독(onSnapshot)으로 여러 기기 연동 활성화
+    // 앱 실행 시 Firestore 실시간 구독 (데이터가 없을 때만 최초 기본값 세팅)
     window.onload = function () {
       // 1. 상담 시간대 실시간 동기화
       db.collection("counseling_db").doc("time_slots").onSnapshot((doc) => {
-        if (doc.exists) {
+        if (doc.exists && doc.data().items && doc.data().items.length > 0) {
           availableTimeSlots = doc.data().items;
         } else {
           availableTimeSlots = defaultTimeSlots;
@@ -1715,7 +1714,7 @@
 
       // 2. 상담 신청 및 리포트 목록 실시간 동기화
       db.collection("counseling_db").doc("counseling_list").onSnapshot((doc) => {
-        if (doc.exists) {
+        if (doc.exists && doc.data().items) {
           counselingList = doc.data().items;
         } else {
           counselingList = defaultCounselingList;
