@@ -695,7 +695,10 @@
       firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.firestore();
+    db.settings({ experimentalAutoDetectLongPolling: true });
 
+    // 서버 데이터를 한 번이라도 받은 뒤에만 저장 허용 (빈 배열/기본값으로 덮어쓰기 방지)
+    const loaded = { time_slots: false, counseling_list: false };
     // 기본 시간대 및 상담 데이터 정의
     let defaultTimeSlots = [
       { id: 'slot-1', date: '2026-10-19', time: '16:30 ~ 16:50', label: '방과후 1타임' },
@@ -742,9 +745,16 @@
 
     // 파이어베이스 데이터 동기화 함수
     function syncDataToFirebase(collectionName, docId, dataArray) {
-      db.collection(collectionName).doc(docId).set({ items: dataArray })
+      if (!loaded[docId]) {
+        showToast('서버 데이터를 아직 불러오지 못해 저장하지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warning');
+        return Promise.resolve(false);
+      }
+      return db.collection(collectionName).doc(docId).set({ items: dataArray })
+        .then(() => true)
         .catch((error) => {
           console.error("Firebase 저장 오류: ", error);
+          showToast(`서버 저장 실패 (${error.code}) — 새로고침하면 사라집니다.`, 'warning');
+          return false;
         });
     }
 
@@ -1178,10 +1188,14 @@
         return;
       }
 
-      const nextNum = String(counselingList.length + 1).padStart(2, '0');
+       if (!loaded.counseling_list) {
+        showToast('서버 데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.', 'warning');
+        return;
+      }
+
       const newEntry = {
         id: 'c-' + Date.now(),
-        queueNum: nextNum,
+        queueNum: '',
         studentId,
         name,
         pin,
@@ -1199,22 +1213,28 @@
         summaryText: ''
       };
 
-      counselingList.push(newEntry);
-      syncDataToFirebase("counseling_db", "counseling_list", counselingList);
-
-      document.getElementById('inputStudentId').value = '';
-      document.getElementById('inputStudentName').value = '';
-      document.getElementById('inputStudentNote').value = '';
-      document.getElementById('inputStudentPin').value = '';
-
-      renderHospitalBoard();
-      renderTimeSlots();
-      renderTeacherTimeSlots();
-      if (isTeacherAuthenticated) {
-        renderTeacherList();
-      }
-
-      showToast(`${name} 학생 상담 신청이 '예약 대기' 상태로 접수되었습니다!`, 'success');
+      const ref = db.collection("counseling_db").doc("counseling_list");
+      db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const items = (snap.exists && snap.data().items) || [];
+        if (items.some(c => c.slotId === chosenSlot.id)) throw new Error('SLOT_TAKEN');
+        const maxNum = items.reduce((m, c) => Math.max(m, Number(c.queueNum) || 0), 0);
+        newEntry.queueNum = String(maxNum + 1).padStart(2, '0');
+        tx.set(ref, { items: [...items, newEntry] });
+      }).then(() => {
+        document.getElementById('inputStudentId').value = '';
+        document.getElementById('inputStudentName').value = '';
+        document.getElementById('inputStudentNote').value = '';
+        document.getElementById('inputStudentPin').value = '';
+        showToast(`${name} 학생 상담 신청이 '예약 대기' 상태로 접수되었습니다!`, 'success');
+      }).catch((err) => {
+        if (err.message === 'SLOT_TAKEN') {
+          showToast('방금 다른 학생이 이 시간대를 신청했습니다. 다른 시간을 선택해 주세요.', 'warning');
+        } else {
+          console.error('신청 저장 오류:', err);
+          showToast(`신청 저장 실패 (${err.code || err.message})`, 'warning');
+        }
+      });
     }
 
     function fillSampleInquiry(name, pin) {
@@ -1699,21 +1719,40 @@
     }
 
     // [안전형 로딩 가드] 앱 실행 시 Firestore에서 데이터를 먼저 확실히 가져오거나, 최초 1회만 기본값을 생성함
-    window.onload = function () {
-      // 1. 상담 시간대 연동
-      db.collection("counseling_db").doc("time_slots").get().then((doc) => {
-        if (doc.exists && doc.data().items && doc.data().items.length > 0) {
-          availableTimeSlots = doc.data().items;
-        } else {
-          availableTimeSlots = defaultTimeSlots;
-          syncDataToFirebase("counseling_db", "time_slots", defaultTimeSlots);
+    function listenDoc(docId, defaults, onData) {
+      const ref = db.collection("counseling_db").doc(docId);
+      ref.onSnapshot((snap) => {
+        if (!snap.exists) {
+          if (snap.metadata.fromCache) return;          // 오프라인 캐시면 판단 보류
+          loaded[docId] = true;
+          ref.set({ items: defaults });                  // 서버에 문서가 정말 없을 때만 최초 1회 생성
+          return;
         }
-        renderTimeSlots();
-        if (isTeacherAuthenticated) renderTeacherTimeSlots();
-      }).catch(() => {
-        availableTimeSlots = defaultTimeSlots;
-        renderTimeSlots();
+        loaded[docId] = true;
+        onData(snap.data().items || []);
+      }, (error) => {
+        console.error(`${docId} 연동 오류:`, error);
+        showToast(`실시간 연동 오류 (${error.code}) — Firestore 데이터베이스/보안 규칙을 확인하세요.`, 'warning');
       });
+    }
+
+    window.onload = function () {
+      listenDoc("time_slots", defaultTimeSlots, (items) => {
+        availableTimeSlots = items;
+        renderTimeSlots();
+        if (isTeacherAuthenticated) { renderTeacherTimeSlots(); renderTeacherList(); }
+      });
+
+      listenDoc("counseling_list", defaultCounselingList, (items) => {
+        counselingList = items;
+        renderHospitalBoard();
+        renderTimeSlots();
+        if (isTeacherAuthenticated) { renderTeacherTimeSlots(); renderTeacherList(); }
+      });
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    };
 
       // 2. 상담 신청 목록 연동 (데이터 유실 방지를 위해 get()으로 최초 로드 후 실시간 리스너 연결)
       db.collection("counseling_db").doc("counseling_list").get().then((doc) => {
