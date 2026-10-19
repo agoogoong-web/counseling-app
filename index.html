@@ -331,7 +331,7 @@
                   <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-stone-400">
                     <i class="fa-solid fa-id-badge"></i>
                   </span>
-                  <input id="inputStudentId" type="text" maxlength="5" required
+                  <input id="inputStudentId" type="text" maxlength="4" required
                     placeholder="예: 2415 (2학년 4반 15번)"
                     class="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 focus:border-sage-600 focus:ring-2 focus:ring-sage-500/20 outline-none font-mono text-sm transition" />
                 </div>
@@ -1130,12 +1130,6 @@
               </div>
               <div class="flex items-center gap-1.5 mt-1">
                 <span class="text-[11px] text-stone-500 truncate">${slot.label}</span>
-                                  <button type="button" onclick="toggleTeacherPin('${item.id}')"
-                    title="비밀번호 보기/숨기기"
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-mono font-bold text-stone-700 transition">
-                    <i class="fa-solid ${revealedPinIds.has(item.id) ? 'fa-lock-open text-amber-600' : 'fa-lock text-stone-400'}"></i>
-                    <span>PW ${revealedPinIds.has(item.id) ? (item.pin || '-') : '••••'}</span>
-                  </button>
                 ${statusBadge}
               </div>
             </div>
@@ -1430,6 +1424,12 @@
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-bold text-sm text-stone-900">${item.name}</span>
                   <span class="font-mono text-xs text-stone-500">(${item.studentId})</span>
+                                    <button type="button" onclick="toggleTeacherPin('${item.id}')"
+                    title="비밀번호 보기/숨기기"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-mono font-bold text-stone-700 transition">
+                    <i class="fa-solid ${revealedPinIds.has(item.id) ? 'fa-lock-open text-amber-600' : 'fa-lock text-stone-400'}"></i>
+                    <span>PW ${revealedPinIds.has(item.id) ? (item.pin || '-') : '••••'}</span>
+                  </button>
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadgeClass}">${statusText}</span>
                 </div>
                 <p class="text-xs text-stone-500 mt-0.5 truncate">주제: ${item.topic}</p>
