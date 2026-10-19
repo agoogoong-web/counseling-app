@@ -1753,35 +1753,6 @@
       updateClock();
       setInterval(updateClock, 1000);
     };
-
-      // 2. 상담 신청 목록 연동 (데이터 유실 방지를 위해 get()으로 최초 로드 후 실시간 리스너 연결)
-      db.collection("counseling_db").doc("counseling_list").get().then((doc) => {
-        if (doc.exists && doc.data().items) {
-          counselingList = doc.data().items;
-        } else {
-          counselingList = defaultCounselingList;
-          syncDataToFirebase("counseling_db", "counseling_list", defaultCounselingList);
-        }
-        renderHospitalBoard();
-        if (isTeacherAuthenticated) renderTeacherList();
-
-        // 최초 로드 이후부터는 실시간 반영(onSnapshot) 시작
-        db.collection("counseling_db").doc("counseling_list").onSnapshot((snapshot) => {
-          if (snapshot.exists && snapshot.data().items) {
-            counselingList = snapshot.data().items;
-            renderHospitalBoard();
-            if (isTeacherAuthenticated) renderTeacherList();
-            renderTimeSlots();
-          }
-        });
-      }).catch(() => {
-        counselingList = defaultCounselingList;
-        renderHospitalBoard();
-      });
-
-      updateClock();
-      setInterval(updateClock, 1000);
-    };
   </script>
 </body>
 </html>
