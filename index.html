@@ -13,7 +13,6 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Google Identity Services (Google Sign-In) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <!-- Firebase SDK CDN (v10 버전) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -105,6 +104,13 @@
         display: none !important;
       }
     }
+        /* 모바일·저사양: 무거운 효과 끄기 */
+    @media (max-width: 1023px), (prefers-reduced-motion: reduce) {
+      .pulse-badge, .animate-ping, .animate-pulse { animation: none !important; }
+      [class*="backdrop-blur"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+      body { background-image: none; }
+    }
+    #modalFormContainer { overscroll-behavior: contain; }
   </style>
 </head>
 
@@ -112,7 +118,7 @@
 
   <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <header class="sticky top-0 z-30 backdrop-blur-md bg-[#FAF7F2]/90 border-b border-stone-200/80 shadow-sm">
+  <header class="sticky top-0 z-30 bg-[#FAF7F2] border-b border-stone-200/80 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
       <!-- Brand / Room Name -->
       <div class="flex items-center gap-3">
@@ -212,7 +218,7 @@
               </span>
             </div>
 
-            <div id="waitingBoardList" class="space-y-2 max-h-[155px] overflow-y-auto custom-scroll pr-1">
+            <div id="waitingBoardList" class="space-y-2 lg:max-h-[155px] lg:overflow-y-auto custom-scroll lg:pr-1">
               <!-- Dynamically populated -->
             </div>
           </div>
@@ -238,7 +244,7 @@
               </span>
             </div>
 
-            <div id="completedBoardList" class="space-y-2 max-h-[155px] overflow-y-auto custom-scroll pr-1">
+            <div id="completedBoardList" class="space-y-2 lg:max-h-[155px] lg:overflow-y-auto custom-scroll lg:pr-1">
               <!-- Dynamically populated -->
             </div>
           </div>
